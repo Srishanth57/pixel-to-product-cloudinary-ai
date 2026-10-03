@@ -5,13 +5,14 @@ cloudinary.config({ secure: true });
 export { cloudinary };
 
 export const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY! });
-export const CLOUD =
-  process.env.NEXT_PUBLIC_CLOUD_NAME || process.env.CLOUDINARY_CLOUD_NAME;
+// One place to change the model. Override with GEMINI_MODEL in .env.local.
+export const GEMINI_MODEL = process.env.GEMINI_MODEL || "gemini-3.8-flash";
+export const CLOUD = process.env.NEXT_PUBLIC_CLOUD_NAME || process.env.CLOUDINARY_CLOUD_NAME || "diagj36ul";
 
 // Ask Gemini for JSON and parse it safely
 export async function geminiJSON(prompt: string) {
   const r = await ai.models.generateContent({
-    model: "gemini-2.5-flash",
+    model: GEMINI_MODEL,
     contents: prompt,
     config: { responseMimeType: "application/json" },
   });
@@ -26,9 +27,7 @@ export async function geminiJSON(prompt: string) {
 }
 
 // Transcribe audio/video directly using Gemini if Cloudinary transcript is unavailable
-export async function transcribeWithGemini(
-  publicId: string,
-): Promise<Array<{ i: number; s: number; e: number; t: string }>> {
+export async function transcribeWithGemini(publicId: string): Promise<Array<{ i: number; s: number; e: number; t: string }>> {
   // Use Cloudinary's on-the-fly mp3 audio derivation
   const audioUrl = cloudinary.url(publicId, {
     resource_type: "video",
@@ -40,10 +39,7 @@ export async function transcribeWithGemini(
     // Fallback to original URL if mp3 derivation fails
     const origUrl = cloudinary.url(publicId, { resource_type: "video" });
     const origRes = await fetch(origUrl);
-    if (!origRes.ok)
-      throw new Error(
-        `Failed to fetch media file from Cloudinary: ${res.statusText}`,
-      );
+    if (!origRes.ok) throw new Error(`Failed to fetch media file from Cloudinary: ${res.statusText}`);
     const buf = await origRes.arrayBuffer();
     const base64 = Buffer.from(buf).toString("base64");
     return transcribeBuffer(base64, "audio/mp3");
@@ -56,7 +52,7 @@ export async function transcribeWithGemini(
 
 async function transcribeBuffer(base64: string, mimeType: string) {
   const response = await ai.models.generateContent({
-    model: "gemini-2.5-flash",
+    model: GEMINI_MODEL,
     contents: [
       {
         role: "user",

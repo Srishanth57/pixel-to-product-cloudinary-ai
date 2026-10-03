@@ -6,21 +6,21 @@ Upload one file and EchoChapters transcribes it, splits it into chapters, cuts e
 
 ## What it does
 
-| Feature        | How it works                                                                                                                                     |
-| -------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
-| Transcription  | Cloudinary speech-to-text (`google_speech`) runs first. If it returns nothing, Gemini 2.5 Flash transcribes the audio into timestamped segments. |
-| Chapters       | Gemini reads the transcript and returns 2 to 6 chapters with titles, summaries and tags.                                                         |
-| Clips          | Each chapter is cropped into its own Cloudinary asset and tagged with its metadata.                                                              |
-| Highlight reel | Gemini picks 2 to 4 moments of 5 to 12 seconds. They are spliced into one video, with English subtitles burned in as timed text layers.          |
-| Subtitles      | Segments are translated into the chosen language and delivered as captions on the player, plus a downloadable WebVTT file.                       |
-| Library search | Searches topics, summaries and tags across all clips. Each result shows a title, description and clickable topic tags, and plays inline.         |
+| Feature | How it works |
+| --- | --- |
+| Transcription | Cloudinary speech-to-text (`google_speech`) runs first. If it returns nothing, Gemini 3.8 Flash transcribes the audio into timestamped segments. |
+| Chapters | Gemini reads the transcript and returns 2 to 6 chapters with titles, summaries and tags. |
+| Clips | Each chapter is cropped into its own Cloudinary asset and tagged with its metadata. |
+| Highlight reel | Gemini picks 2 to 4 moments of 5 to 12 seconds. They are spliced into one video, with English subtitles burned in as timed text layers. |
+| Subtitles | Segments are translated into the chosen language and delivered as captions on the player, plus a downloadable WebVTT file. |
+| Library search | Searches topics, summaries and tags across all clips. Each result shows a title, description and clickable topic tags, and plays inline. |
 
 ## Tech stack
 
 - Next.js 16 (App Router) and React 19
 - Tailwind CSS 4
 - Cloudinary for storage, transformations, speech-to-text and delivery
-- Google Gemini 2.5 Flash via `@google/genai`
+- Google Gemini 3.8 Flash via `@google/genai`
 - Geist and Geist Mono through `next/font`
 - `lucide-react` for icons
 
@@ -46,6 +46,8 @@ CLOUDINARY_URL=cloudinary://<api_key>:<api_secret>@<cloud_name>
 
 # Gemini
 GEMINI_API_KEY=your_key_here
+# Optional. Defaults to gemini-3.8-flash.
+GEMINI_MODEL=gemini-3.8-flash
 
 # Optional. Falls back to CLOUDINARY_CLOUD_NAME.
 NEXT_PUBLIC_CLOUD_NAME=<cloud_name>
@@ -61,12 +63,12 @@ Open [http://localhost:3000](http://localhost:3000) for the landing page and [ht
 
 ### Scripts
 
-| Command         | Purpose                      |
-| --------------- | ---------------------------- |
-| `npm run dev`   | Start the development server |
-| `npm run build` | Create a production build    |
-| `npm run start` | Run the production build     |
-| `npm run lint`  | Run ESLint                   |
+| Command | Purpose |
+| --- | --- |
+| `npm run dev` | Start the development server |
+| `npm run build` | Create a production build |
+| `npm run start` | Run the production build |
+| `npm run lint` | Run ESLint |
 
 ## Using the studio
 
@@ -107,13 +109,26 @@ src/
 
 ## API routes
 
-| Route            | Method | Purpose                                                                                      |
-| ---------------- | ------ | -------------------------------------------------------------------------------------------- |
-| `/api/upload`    | POST   | Accepts a multipart `file` and returns the Cloudinary `public_id`.                           |
-| `/api/process`   | POST   | Takes `{ publicId }` and returns clips, the reel URL, segments and stats. Up to 300 seconds. |
-| `/api/subtitles` | POST   | Takes `{ publicId, lang, segs }` and returns the VTT URL and translated cues.                |
-| `/api/search`    | GET    | Takes `?q=` and returns matching clips with topic, summary and tags.                         |
+| Route | Method | Purpose |
+| --- | --- | --- |
+| `/api/upload` | POST | Accepts a multipart `file` and returns the Cloudinary `public_id`. |
+| `/api/process` | POST | Takes `{ publicId }` and returns clips, the reel URL, segments and stats. Up to 300 seconds. |
+| `/api/subtitles` | POST | Takes `{ publicId, lang, segs }` and returns the VTT URL and translated cues. |
+| `/api/search` | GET | Takes `?q=` and returns matching clips with topic, summary and tags. |
 
 ## Design system
 
 The interface uses a dark green-black palette with a single moss accent and a pale mist section for contrast, with light-weight Geist headlines. All colors and fonts are tokens in `src/app/globals.css`, so a theme change means editing one file. Images on the landing page are placeholders, so replace them with real footage stills.
+
+## Before you deploy
+
+- Remove `src/app/api/debug/route.ts`.
+- Remove the hardcoded fallback cloud name in `src/lib/clients.ts` and set `NEXT_PUBLIC_CLOUD_NAME` instead.
+- Add authentication and rate limiting to `/api/upload` and `/api/process`. Both spend Cloudinary and Gemini credits.
+- Check your host's function timeout. Processing needs up to 300 seconds.
+
+## Notes
+
+- Burned-in reel subtitles are limited to 12 lines of 90 characters each, to keep Cloudinary URLs a safe length.
+- The reel renders the first time it is requested, so the first play can take a moment.
+- Library search relies on Cloudinary context metadata. Clips made before the metadata was added show tag-based descriptions instead of summaries.

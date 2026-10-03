@@ -5,7 +5,7 @@ import {
   geminiJSON,
   transcribeWithGemini,
 } from "@/lib/clients";
-import { buildReelUrl } from "@/lib/reel";
+import { buildReelCues, buildReelUrl } from "@/lib/reel";
 
 export const maxDuration = 300;
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
@@ -64,7 +64,7 @@ export async function POST(req: Request) {
     }
 
     if (!segs || segs.length === 0) {
-      console.log(`Transcribing ${publicId} with Gemini 2.5 Flash...`);
+      console.log(`Transcribing ${publicId} with Gemini...`);
       segs = await transcribeWithGemini(publicId);
     }
 
@@ -210,8 +210,8 @@ Return ONLY a JSON array: [{"start": number, "end": number}]`,
     }
 
     // Burn English subtitles into the reel (times are relative to the spliced reel)
-
-    const reel = buildReelUrl(publicId, picks, []);
+    const reelCues = await buildReelCues(picks, segs);
+    const reel = buildReelUrl(publicId, picks, reelCues);
 
     const thumb = cloudinary.url(publicId, {
       resource_type: "video",
