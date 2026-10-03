@@ -1,14 +1,17 @@
+import { cleanId } from "./ids";
 import type { SearchItem } from "./types";
 
 const GENERIC = /^(indexed cloudinary video asset|cloudinary video resource)$/i;
 
-/** Drop pipeline-internal tags (the batch tag and the sanitized source id) and duplicates. */
+/** Drop pipeline-internal tags (the batch tag and this clip's source id) and duplicates. */
 export function cleanTags(item: SearchItem): string[] {
+  const sourceTag = item.source ? cleanId(item.source) : "";
   const seen = new Set<string>();
   return item.tags.filter((t) => {
     const k = t.toLowerCase();
-    if (k === "echochapters" || /^[a-z0-9]+(_[a-z0-9]+)+$/i.test(t) && t.length > 18 || seen.has(k)) return false;
-    seen.add(k); return true;
+    if (k === "echochapters" || t === sourceTag || seen.has(k)) return false;
+    seen.add(k);
+    return true;
   });
 }
 

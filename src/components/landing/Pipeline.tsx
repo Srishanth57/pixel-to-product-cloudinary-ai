@@ -3,7 +3,7 @@ import Reveal from "@/components/ui/Reveal";
 
 /* Bento math (6 cols, grid-flow-dense): row1 = 4+2, row2 = (4 continues)+2, row3 = 3+3. Five cells, zero voids. */
 const cells = [
-  { icon: AudioLines, t: "Transcription that never fails silently", d: "Cloudinary speech-to-text runs first. If it returns nothing, Gemini 2.5 Flash transcribes the audio into timestamped segments.", cls: "md:col-span-4 md:row-span-2", img: "mountain-sensor-array" },
+  { icon: AudioLines, t: "Transcription that never fails silently", d: "Cloudinary speech-to-text runs first. If it returns nothing, Gemini 3.8 Flash transcribes the audio into timestamped segments.", cls: "md:col-span-4 md:row-span-2", img: "mountain-sensor-array" },
   { icon: ListTree, t: "Two to six chapters", d: "Gemini reads the transcript and returns titles, summaries and tags.", cls: "md:col-span-2" },
   { icon: Scissors, t: "Clips that carry metadata", d: "Each chapter is cropped into its own asset, tagged and searchable.", cls: "md:col-span-2" },
   { icon: Clapperboard, t: "A highlight reel", d: "Two to four moments of 5 to 12 seconds, spliced into one short video.", cls: "md:col-span-3" },

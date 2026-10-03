@@ -2,7 +2,7 @@ import Reveal from "@/components/ui/Reveal";
 
 const items = [
   ["Cloudinary", "Storage, trimming, thumbnails, splicing and delivery from one URL scheme."],
-  ["Gemini 2.5 Flash", "Chaptering, highlight selection, translation and the transcription fallback."],
+  ["Gemini 3.8 Flash", "Chaptering, highlight selection, translation and the transcription fallback."],
   ["Context search", "Topics, summaries and tags are written to each asset, so search needs no extra database."],
   ["Next.js 16", "Route handlers for upload, process, search and subtitles. Deploy anywhere Node runs."],
 ];

@@ -1,13 +1,13 @@
 "use client";
 import { useState } from "react";
 import { makeSubtitles } from "@/lib/api";
+import { LANGS } from "@/lib/languages";
 import type { Cue, Seg } from "@/lib/types";
 
-const LANGS = ["Hindi", "Spanish", "French", "German", "Tamil", "Japanese"];
 export type Track = { lang: string; url: string; cues: Cue[] };
 
 export default function SubtitlePanel({ publicId, segs, onTrack }: { publicId: string; segs: Seg[]; onTrack: (t: Track) => void }) {
-  const [lang, setLang] = useState(LANGS[0]);
+  const [lang, setLang] = useState<string>(LANGS[0]);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
 

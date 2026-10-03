@@ -1,52 +1,37 @@
 import { NextResponse } from "next/server";
+import type { UploadApiResponse } from "cloudinary";
 import { cloudinary } from "@/lib/clients";
+import { HttpError, UPLOAD_FOLDER, fail } from "@/lib/http";
 
 export const maxDuration = 120;
 
+const MAX_BYTES = 100 * 1024 * 1024; // Cloudinary's free-plan video limit
+
 export async function POST(req: Request) {
   try {
-    const formData = await req.formData();
-    const file = formData.get("file") as File | null;
-
-    if (!file) {
-      return NextResponse.json({ error: "No file provided" }, { status: 400 });
+    let form: FormData;
+    try {
+      form = await req.formData();
+    } catch {
+      throw new HttpError(400, "Expected a multipart form upload");
     }
 
-    const arrayBuffer = await file.arrayBuffer();
-    const buffer = Buffer.from(arrayBuffer);
+    const file = form.get("file");
+    if (!(file instanceof File) || file.size === 0) throw new HttpError(400, "No file provided");
+    if (!/^(video|audio)\//.test(file.type)) throw new HttpError(415, "Only video and audio files are supported");
+    if (file.size > MAX_BYTES) throw new HttpError(413, "File is too large. The limit is 100 MB.");
 
-    const uploadPromise = new Promise<any>((resolve, reject) => {
-      const uploadStream = cloudinary.uploader.upload_stream(
-        {
-          resource_type: "auto",
-          folder: "echochapters_uploads",
-          use_filename: true,
-          unique_filename: true,
-        },
-        (error, result) => {
-          if (error) reject(error);
-          else resolve(result);
-        }
+    const buffer = Buffer.from(await file.arrayBuffer());
+    const result = await new Promise<UploadApiResponse>((resolve, reject) => {
+      const stream = cloudinary.uploader.upload_stream(
+        { resource_type: "auto", folder: UPLOAD_FOLDER, use_filename: true, unique_filename: true },
+        (error, res) => (error || !res ? reject(error ?? new Error("Upload returned no result")) : resolve(res)),
       );
-      uploadStream.end(buffer);
+      stream.end(buffer);
     });
 
-    const result = await uploadPromise;
-
-    return NextResponse.json({
-      public_id: result.public_id,
-      url: result.secure_url || result.url,
-      format: result.format,
-      resource_type: result.resource_type,
-      duration: result.duration,
-      width: result.width,
-      height: result.height,
-    });
-  } catch (error: any) {
-    console.error("Upload API error:", error);
-    return NextResponse.json(
-      { error: error?.message || "Upload failed" },
-      { status: 500 }
-    );
+    return NextResponse.json({ public_id: result.public_id });
+  } catch (err) {
+    return fail(err, "Upload failed");
   }
 }
