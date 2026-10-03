@@ -2,6 +2,15 @@
 
 Turn long lectures and videos into a searchable, multilingual media library.
 
+
+
+https://github.com/user-attachments/assets/a081327d-af0f-4192-a8db-3a1e6a4922b5
+
+
+
+
+
+
 Upload one file and EchoChapters transcribes it, splits it into chapters, cuts each chapter into its own clip, builds a highlight reel with English subtitles burned in, and generates subtitles in the language you pick. Every clip is stored with its topic, summary and tags, so you can search the library later without a separate database.
 
 ## What it does
