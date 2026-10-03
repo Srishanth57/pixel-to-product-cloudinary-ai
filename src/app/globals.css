@@ -1,1 +1,29 @@
 @import "tailwindcss";
+
+/* Design tokens. Surfaces alternate dark > mist > dark (see DESIGN.md pacing rule). One accent: moss. */
+@theme inline {
+  --color-canvas: #0c110e;
+  --color-surface: #141b16;
+  --color-raised: #1b241e;
+  --color-mist: #e9eee6;
+  --color-ink: #0f1511;
+  --color-muted: #8f9b91;
+  --color-line: rgba(233, 238, 230, 0.12);
+  --color-moss: #b4dc72;
+  --color-moss-press: #9bc45a;
+  --font-sans: var(--font-geist), system-ui, sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, monospace;
+}
+html { background: var(--color-canvas); color: var(--color-mist); scroll-behavior: smooth; }
+body { font-family: var(--font-sans); -webkit-font-smoothing: antialiased; }
+
+.display { font-weight: 300; letter-spacing: -0.035em; line-height: 1.04; }
+.reveal { opacity: 0; transform: translateY(16px); transition: opacity .8s cubic-bezier(.16,1,.3,1), transform .8s cubic-bezier(.16,1,.3,1); transition-delay: calc(var(--i, 0) * 80ms); }
+.reveal.in { opacity: 1; transform: none; }
+.btn { display: inline-flex; align-items: center; gap: .5rem; white-space: nowrap; border-radius: .5rem; padding: .75rem 1.25rem; font-size: .875rem; font-weight: 500; transition: transform .2s, background-color .2s; }
+.btn:active { transform: scale(.98); }
+.btn-primary { background: var(--color-moss); color: var(--color-ink); }
+.btn-primary:hover { background: var(--color-moss-press); }
+.btn-ghost { border: 1px solid var(--color-line); color: var(--color-mist); }
+.btn-ghost:hover { background: var(--color-raised); }
+@media (prefers-reduced-motion: reduce) { .reveal { opacity: 1; transform: none; transition: none; } html { scroll-behavior: auto; } }

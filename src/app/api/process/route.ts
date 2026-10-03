@@ -1,5 +1,11 @@
 import { NextResponse } from "next/server";
-import { cloudinary, CLOUD, geminiJSON, transcribeWithGemini } from "@/lib/clients";
+import {
+  cloudinary,
+  CLOUD,
+  geminiJSON,
+  transcribeWithGemini,
+} from "@/lib/clients";
+import { buildReelUrl } from "@/lib/reel";
 
 export const maxDuration = 300;
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
@@ -66,11 +72,23 @@ export async function POST(req: Request) {
       segs = [{ i: 0, s: 0, e: 10, t: "Media speech & audio content" }];
     }
 
-    const totalWords = segs.reduce((acc, curr) => acc + (curr.t ? curr.t.split(/\s+/).length : 0), 0);
-    const mediaDuration = Math.max(10, Math.ceil(segs[segs.length - 1]?.e || 30));
+    const totalWords = segs.reduce(
+      (acc, curr) => acc + (curr.t ? curr.t.split(/\s+/).length : 0),
+      0,
+    );
+    const mediaDuration = Math.max(
+      10,
+      Math.ceil(segs[segs.length - 1]?.e || 30),
+    );
 
     // 2. CHAPTERING (Gemini analyzes transcript segments)
-    let chapters: Array<{ title: string; summary: string; tags: string[]; start: number; end: number }> = [];
+    let chapters: Array<{
+      title: string;
+      summary: string;
+      tags: string[];
+      start: number;
+      end: number;
+    }> = [];
     try {
       chapters = await geminiJSON(
         `Analyze this video/audio transcript and divide it into 2 to 6 logical chapters.
@@ -86,7 +104,7 @@ Return a JSON array of objects with schema:
     "start": number (start second float),
     "end": number (end second float)
   }
-]`
+]`,
       );
     } catch (err) {
       console.error("Chaptering JSON generation error:", err);
@@ -96,7 +114,8 @@ Return a JSON array of objects with schema:
       chapters = [
         {
           title: "Part 1: Introduction & Key Points",
-          summary: "Opening discussion and foundational topics covered in this recording.",
+          summary:
+            "Opening discussion and foundational topics covered in this recording.",
           tags: ["overview", "introduction"],
           start: segs[0]?.s || 0,
           end: mediaDuration,
@@ -110,7 +129,10 @@ Return a JSON array of objects with schema:
       const cleanId = publicId.replace(/[^a-zA-Z0-9_-]/g, "_");
       const clipId = `echo_clips/${cleanId}_ch${n + 1}`;
       const start = Math.max(0, Math.floor(c.start || 0));
-      const end = Math.min(mediaDuration, Math.max(start + 1, Math.ceil(c.end || start + 5)));
+      const end = Math.min(
+        mediaDuration,
+        Math.max(start + 1, Math.ceil(c.end || start + 5)),
+      );
       const clipDuration = Math.max(1, end - start);
 
       const trimmed = cloudinary.url(publicId, {
@@ -141,7 +163,10 @@ Return a JSON array of objects with schema:
           start,
           end,
           duration: clipDuration,
-          url: cloudinary.url(clipId, { resource_type: "video", format: "mp4" }),
+          url: cloudinary.url(clipId, {
+            resource_type: "video",
+            format: "mp4",
+          }),
           thumb: cloudinary.url(clipId, {
             resource_type: "video",
             start_offset: "auto",
@@ -174,7 +199,7 @@ Return a JSON array of objects with schema:
 Transcript segments:
 ${JSON.stringify(segs)}
 
-Return ONLY a JSON array: [{"start": number, "end": number}]`
+Return ONLY a JSON array: [{"start": number, "end": number}]`,
       );
     } catch {
       picks = [{ start: 0, end: Math.min(10, mediaDuration) }];
@@ -184,33 +209,9 @@ Return ONLY a JSON array: [{"start": number, "end": number}]`
       picks = [{ start: 0, end: Math.min(10, mediaDuration) }];
     }
 
-    const [first, ...rest] = picks;
-    let reel = "";
-    try {
-      if (rest.length > 0) {
-        reel = cloudinary.url(publicId, {
-          resource_type: "video",
-          format: "mp4",
-          transformation: [
-            { start_offset: first.start, end_offset: first.end },
-            ...rest.map((p) => ({
-              overlay: `video:${publicId.replace(/\//g, ":")}`,
-              flags: "splice",
-              transformation: [{ start_offset: p.start, end_offset: p.end }],
-            })),
-            { flags: "layer_apply" },
-          ],
-        });
-      } else {
-        reel = cloudinary.url(publicId, {
-          resource_type: "video",
-          format: "mp4",
-          transformation: [{ start_offset: first.start, end_offset: first.end }],
-        });
-      }
-    } catch {
-      reel = cloudinary.url(publicId, { resource_type: "video", format: "mp4" });
-    }
+    // Burn English subtitles into the reel (times are relative to the spliced reel)
+
+    const reel = buildReelUrl(publicId, picks, []);
 
     const thumb = cloudinary.url(publicId, {
       resource_type: "video",
@@ -222,10 +223,14 @@ Return ONLY a JSON array: [{"start": number, "end": number}]`
 
     return NextResponse.json({
       publicId,
-      mediaUrl: cloudinary.url(publicId, { resource_type: "video", format: "mp4" }),
+      mediaUrl: cloudinary.url(publicId, {
+        resource_type: "video",
+        format: "mp4",
+      }),
       duration: mediaDuration,
       clips,
       reel,
+      reelCues,
       picks,
       thumb,
       segs,
@@ -241,7 +246,7 @@ Return ONLY a JSON array: [{"start": number, "end": number}]`
     console.error("Process API Error:", err);
     return NextResponse.json(
       { error: err?.message || "Failed to process video/audio" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

@@ -38,7 +38,9 @@ Return ONLY a JSON array of translated strings: ["...", "..."]`
       { resource_type: "raw", public_id: track, overwrite: true }
     );
 
+    const cues = segs.map((s: any, i: number) => ({ s: s.s, e: s.e, t: (translated && translated[i]) || s.t || "" }));
     return NextResponse.json({
+      cues,
       lang,
       url: res.secure_url || `https://res.cloudinary.com/${CLOUD}/raw/upload/${track}`,
     });
