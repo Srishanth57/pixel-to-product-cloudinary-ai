@@ -5,7 +5,8 @@ cloudinary.config({ secure: true });
 export { cloudinary };
 
 export const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY! });
-export const CLOUD = process.env.NEXT_PUBLIC_CLOUD_NAME || process.env.CLOUDINARY_CLOUD_NAME || "diagj36ul";
+export const CLOUD =
+  process.env.NEXT_PUBLIC_CLOUD_NAME || process.env.CLOUDINARY_CLOUD_NAME;
 
 // Ask Gemini for JSON and parse it safely
 export async function geminiJSON(prompt: string) {
@@ -25,7 +26,9 @@ export async function geminiJSON(prompt: string) {
 }
 
 // Transcribe audio/video directly using Gemini if Cloudinary transcript is unavailable
-export async function transcribeWithGemini(publicId: string): Promise<Array<{ i: number; s: number; e: number; t: string }>> {
+export async function transcribeWithGemini(
+  publicId: string,
+): Promise<Array<{ i: number; s: number; e: number; t: string }>> {
   // Use Cloudinary's on-the-fly mp3 audio derivation
   const audioUrl = cloudinary.url(publicId, {
     resource_type: "video",
@@ -37,7 +40,10 @@ export async function transcribeWithGemini(publicId: string): Promise<Array<{ i:
     // Fallback to original URL if mp3 derivation fails
     const origUrl = cloudinary.url(publicId, { resource_type: "video" });
     const origRes = await fetch(origUrl);
-    if (!origRes.ok) throw new Error(`Failed to fetch media file from Cloudinary: ${res.statusText}`);
+    if (!origRes.ok)
+      throw new Error(
+        `Failed to fetch media file from Cloudinary: ${res.statusText}`,
+      );
     const buf = await origRes.arrayBuffer();
     const base64 = Buffer.from(buf).toString("base64");
     return transcribeBuffer(base64, "audio/mp3");
